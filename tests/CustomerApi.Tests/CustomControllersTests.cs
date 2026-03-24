@@ -70,4 +70,29 @@ public class CustomersControllerTests : IClassFixture<CustomWebApplicationFactor
 
     }
 
+    [Fact]
+    public async Task Get_NoCustomers_ReturnsId() {
+        
+        var response = await _client.GetAsync("/api/customers/9999");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+    }
+
+    [Fact]
+    public async Task Put_Customers() {
+        Customer new_customer = new Customer {Name = "Putter", Email = "put@testmail.de"};
+        
+        var response = await _client.PostAsJsonAsync("/api/customers", new_customer);
+
+        var customer = await response.Content.ReadFromJsonAsync<Customer>();
+        Assert.NotNull(customer);
+        customer.Name = "Updated Putter";
+
+        var put_response = await _client.PutAsJsonAsync($"/api/customers/{customer.Id}", customer);
+        Assert.Equal(HttpStatusCode.NoContent, put_response.StatusCode);
+
+    
+
+    }
+
 }
