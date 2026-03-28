@@ -1,14 +1,31 @@
 using System.Net;
 using System.Net.Http.Json;
 using CustomerApi.Models;
+using Microsoft.Extensions.DependencyInjection;
+using CustomerApi.Data;
 
 
-public class CustomersControllerTests : IClassFixture<CustomWebApplicationFactory>  {
+public class CustomersControllerTests : IClassFixture<CustomWebApplicationFactory>,  IAsyncLifetime  {
 
     private readonly HttpClient _client;
+    private readonly CustomWebApplicationFactory _factory;
 
     public CustomersControllerTests (CustomWebApplicationFactory factory) {
+        _factory = factory;
         _client = factory.CreateClient();
+
+    }
+
+    public async Task InitializeAsync() {
+        using var scope = _factory.Services.CreateScope();
+        AppDbContext context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Customers.RemoveRange(context.Customers);
+
+        await context.SaveChangesAsync();
+    }
+
+    public Task DisposeAsync() {
+        return Task.CompletedTask;
     }
 
     [Fact]
@@ -92,6 +109,18 @@ public class CustomersControllerTests : IClassFixture<CustomWebApplicationFactor
         Assert.Equal(HttpStatusCode.NoContent, put_response.StatusCode);
 
     
+
+    }
+
+    [Fact]
+    public async Task Delete_Customer_ById() {
+        Customer new_customer = new Customer {Name = "Useless", Email = "useless@testmail.de"};
+
+        var response = await _client.PostAsJsonAsync("/api/customers", new_customer);
+        var customer = await response.Content.ReadFromJsonAsync<Customer>();
+        Assert.NotNull(customer);
+        var delete_response = await _client.DeleteAsync($"/api/customers/{customer.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, delete_response.StatusCode);
 
     }
 
