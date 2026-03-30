@@ -124,4 +124,21 @@ public class CustomersControllerTests : IClassFixture<CustomWebApplicationFactor
 
     }
 
+    [Fact]
+    public async Task Post_Customer_ValidateEmail() {
+       Customer new_customer = new Customer {Name = "Invalid", Email = "invalidmail"};
+
+       var response = await _client.PostAsJsonAsync("/api/customers", new_customer);
+       Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+
+    [Fact]
+    public async Task Post_Customer_ValidateName() {
+       Customer new_customer = new Customer {Name = "", Email = "invalid@mail.de"};
+
+       var response = await _client.PostAsJsonAsync("/api/customers", new_customer);
+       Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
 }
