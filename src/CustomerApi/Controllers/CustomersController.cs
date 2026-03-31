@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CustomerApi.Data;
 using CustomerApi.Models;
+using CustomerApi.Dtos;
 
 
 
@@ -24,34 +25,47 @@ public class CustomersController : ControllerBase {
 
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Customer>>> GetCustomers() {
-            return await _context.Customers.ToListAsync();
+    public async Task<ActionResult<IEnumerable<CustomerResponseDto>>> GetCustomers() {
+            return await _context.Customers.Select(c => new CustomerResponseDto {Id = c.Id, Name = c.Name, Email = c.Email, Phone = c.Phone, Company = c.Company, CreatedAt = c.CreatedAt}).ToListAsync();
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Customer>> GetCustomer(int id) {
+    public async Task<ActionResult<CustomerResponseDto>> GetCustomer(int id) {
         var customer = await _context.Customers.FindAsync(id);
 
         if(customer == null) return NotFound();
+
+        CustomerResponseDto customer_response = new CustomerResponseDto {Id = customer.Id, Name = customer.Name, Email = customer.Email, Phone = customer.Phone, Company = customer.Company, CreatedAt = customer.CreatedAt};
     
-        return customer;
+        return customer_response;
         
     }
 
      [HttpPost]
-     public async Task<ActionResult<Customer>> CreateCustomer(Customer customer) {
+     public async Task<ActionResult<CustomerResponseDto>> CreateCustomer(CustomerCreateDto customerTransfer) {
+        Customer customer = new Customer {Name = customerTransfer.Name, Email = customerTransfer.Email, Phone = customerTransfer.Phone, Company = customerTransfer.Company};
         customer.CreatedAt = DateTime.UtcNow;
         _context.Customers.Add(customer);
 
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetCustomer), new {id = customer.Id }, customer);
+        CustomerResponseDto customer_response = new CustomerResponseDto {Id = customer.Id, Name = customer.Name, Email = customer.Email, Phone = customer.Phone, Company = customer.Company, CreatedAt = customer.CreatedAt};
+
+
+        return CreatedAtAction(nameof(GetCustomer), new {id = customer.Id }, customer_response);
      }
 
      [HttpPut("{id}")]
-     public async Task<IActionResult> UpdateCustomer(int id, Customer customer) {
-        if (id != customer.Id) return BadRequest();
-        _context.Entry(customer).State = EntityState.Modified;
+     public async Task<IActionResult> UpdateCustomer(int id, CustomerCreateDto customCreateDto) {
+        var customer = await _context.Customers.FindAsync(id);
+
+        if (customer == null) return NotFound();
+
+        customer.Name = customCreateDto.Name;
+        customer.Email = customCreateDto.Email;
+        customer.Phone = customCreateDto.Phone;
+        customer.Company = customCreateDto.Company;
+
         try {
             await _context.SaveChangesAsync();
         }
